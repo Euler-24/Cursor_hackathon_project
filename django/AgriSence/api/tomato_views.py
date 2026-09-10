@@ -497,9 +497,18 @@ class AgentCasAPIView(APIView):
 
 class SanteAPIView(APIView):
     def get(self, request):
+        try:
+            cultures = Culture.objects.count()
+            utilisateurs = Utilisateur.objects.count()
+            db_ok = True
+        except Exception as exc:
+            cultures = 0
+            utilisateurs = 0
+            db_ok = False
         return Response({
             "service": "AgriSence Tomato API",
             "ok": True,
-            "cultures": Culture.objects.count(),
-            "utilisateurs": Utilisateur.objects.count(),
+            "db_ok": db_ok,
+            "cultures": cultures,
+            "utilisateurs": utilisateurs,
         })

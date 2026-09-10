@@ -116,6 +116,7 @@ def _mysql_config():
             'OPTIONS': {
                 'charset': 'utf8mb4',
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'connect_timeout': 8,
             },
         }
     return {
@@ -125,11 +126,11 @@ def _mysql_config():
         'PASSWORD': os.environ.get('MYSQLPASSWORD', os.environ.get('MYSQL_PASSWORD', 'ideale')),
         'HOST': os.environ.get('MYSQLHOST', os.environ.get('MYSQL_HOST', '127.0.0.1')),
         'PORT': os.environ.get('MYSQLPORT', os.environ.get('MYSQL_PORT', '3306')),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'connect_timeout': 8,
+            },
 
 
 DATABASES = {
@@ -182,9 +183,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'

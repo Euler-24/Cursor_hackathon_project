@@ -15,12 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from api.demo_views import AccueilDemoView
 
+
+def healthz(_request):
+    return JsonResponse({"ok": True, "service": "AgriSence"})
+
+
 urlpatterns = [
+    path('healthz/', healthz, name='healthz'),
     path('', AccueilDemoView.as_view(), name='accueil'),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),

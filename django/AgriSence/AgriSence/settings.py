@@ -126,11 +126,12 @@ def _mysql_config():
         'PASSWORD': os.environ.get('MYSQLPASSWORD', os.environ.get('MYSQL_PASSWORD', 'ideale')),
         'HOST': os.environ.get('MYSQLHOST', os.environ.get('MYSQL_HOST', '127.0.0.1')),
         'PORT': os.environ.get('MYSQLPORT', os.environ.get('MYSQL_PORT', '3306')),
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'connect_timeout': 8,
-            },
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'connect_timeout': 8,
+        },
+    }
 
 
 DATABASES = {

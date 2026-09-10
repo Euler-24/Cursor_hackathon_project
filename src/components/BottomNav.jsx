@@ -11,20 +11,37 @@ const ITEMS = [
 
 export default function BottomNav({ view, goTo }) {
   return (
-    <div className="lg:hidden sticky bottom-0 flex items-center justify-around px-2 pt-2 pb-3 bg-surfaceRaised border-t border-lineSoft">
-      {ITEMS.map((it) => {
-        const active = view === it.id;
-        return (
-          <button
-            key={it.id}
-            onClick={() => goTo(it.id)}
-            className="flex flex-col items-center gap-1.5 px-2 py-1 flex-1"
-          >
-            <it.icon size={18} strokeWidth={active ? 2.4 : 2} className={active ? "text-orange" : "text-faint"} />
-            <span className={`text-[10px] font-medium ${active ? "text-orange" : "text-faint"}`}>{it.label}</span>
-          </button>
-        );
-      })}
-    </div>
+    <nav
+      aria-label="Navigation mobile"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-20 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 pointer-events-none"
+    >
+      <div className="pointer-events-auto flex items-center justify-around px-1.5 py-1.5 rounded-2xl bg-surfaceRaised/95 backdrop-blur-md border border-line shadow-nav">
+        {ITEMS.map((it) => {
+          const active = view === it.id;
+          return (
+            <button
+              key={it.id}
+              onClick={() => goTo(it.id)}
+              className={`flex flex-col items-center gap-1 px-2 py-2 flex-1 rounded-xl transition-colors ${
+                active ? "bg-orange/15" : ""
+              }`}
+            >
+              <it.icon
+                size={18}
+                strokeWidth={active ? 2.4 : 2}
+                className={active ? "text-orange" : "text-faint"}
+              />
+              <span
+                className={`text-[10px] font-semibold tracking-[-0.01em] ${
+                  active ? "text-orange" : "text-faint"
+                }`}
+              >
+                {it.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

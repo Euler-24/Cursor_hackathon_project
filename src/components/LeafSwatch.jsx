@@ -18,7 +18,7 @@ export default function LeafSwatch({ type, size = 56 }) {
   const cfg = SWATCH_CONFIG[type] ?? SWATCH_CONFIG.sain;
 
   return (
-    <svg width={size} height={size} viewBox="0 0 56 56" className="rounded-xl block">
+    <svg width={size} height={size} viewBox="0 0 56 56" className="rounded-xl block mx-auto">
       <rect width="56" height="56" rx="14" fill="#F1ECE0" />
       <path d="M28 12c9 2 15 9 15 18 0 6-6 10-15 10s-15-4-15-10c0-9 6-16 15-18z" fill={cfg.base} />
       <path d="M28 14v24" stroke={cfg.vein} strokeWidth="1.4" strokeLinecap="round" />

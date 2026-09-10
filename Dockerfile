@@ -11,4 +11,4 @@ ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=AgriSence.settings
 ENV DEBUG=False
 
-CMD ["sh", "-c", "gunicorn AgriSence.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py init_schema && python manage.py seed_agrisence || true; exec gunicorn AgriSence.wsgi:application --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 2"]

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 import sys
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,7 +44,6 @@ for host in ALLOWED_HOSTS:
         CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
         CSRF_TRUSTED_ORIGINS.append(f'http://{host}')
 CSRF_TRUSTED_ORIGINS.extend([
-    'https://*.up.railway.app',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
 ])
@@ -98,8 +98,27 @@ WSGI_APPLICATION = 'AgriSence.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
+def _mysql_config():
+    url = (
+        os.environ.get('MYSQL_URL')
+        or os.environ.get('MYSQL_PRIVATE_URL')
+        or os.environ.get('DATABASE_URL')
+    )
+    if url and url.startswith('mysql'):
+        parsed = urlparse(url)
+        return {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': (parsed.path or '/railway').lstrip('/') or 'railway',
+            'USER': unquote(parsed.username or ''),
+            'PASSWORD': unquote(parsed.password or ''),
+            'HOST': parsed.hostname or '127.0.0.1',
+            'PORT': str(parsed.port or 3306),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    return {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.environ.get('MYSQLDATABASE', os.environ.get('MYSQL_DATABASE', 'agrisence')),
         'USER': os.environ.get('MYSQLUSER', os.environ.get('MYSQL_USER', 'root')),
@@ -111,6 +130,10 @@ DATABASES = {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
+
+
+DATABASES = {
+    'default': _mysql_config()
 }
 
 if TESTING:
@@ -164,6 +187,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True

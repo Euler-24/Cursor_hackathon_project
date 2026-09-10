@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgriSense Tomato</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#f4efe8; --ink:#1c1917; --muted:#57534e; --accent:#c2622e; --deep:#1f2a24; --card:#fff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Manrope, sans-serif; background:var(--bg); color:var(--ink); }
+    h1,h2,h3 { font-family: Fraunces, serif; }
+    header { position:sticky; top:0; z-index:5; background:rgba(244,239,232,.92); backdrop-filter:blur(8px); border-bottom:1px solid #e7e0d6; }
+    .bar { max-width:1100px; margin:auto; padding:.8rem 1rem; display:flex; gap:.6rem; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .brand { font-family:Fraunces,serif; font-weight:700; }
+    .brand small { display:block; color:var(--accent); font-size:.7rem; letter-spacing:.08em; }
+    nav { display:flex; gap:.4rem; flex-wrap:wrap; }
+    nav button, .btn { border:0; border-radius:999px; padding:.5rem .9rem; font-weight:700; cursor:pointer; }
+    nav button { background:transparent; }
+    nav button.on { background:#1c1917; color:#fff; }
+    .btn { background:var(--accent); color:#fff; }
+    .btn.ghost { background:#fff; border:1px solid #d6d3d1; color:var(--ink); }
+    main { max-width:1100px; margin:auto; padding:1.2rem 1rem 3rem; }
+    .hero { display:grid; gap:1.2rem; }
+    @media(min-width:860px){ .hero { grid-template-columns:1.1fr .9fr; align-items:center; } }
+    .card { background:var(--card); border-radius:22px; padding:1.1rem; box-shadow:0 10px 30px rgba(28,25,23,.06); }
+    .grid3 { display:grid; gap:.8rem; }
+    @media(min-width:700px){ .grid3 { grid-template-columns:repeat(3,1fr); } }
+    label { display:block; margin:.7rem 0 .25rem; font-size:.85rem; color:var(--muted); }
+    input, select, textarea { width:100%; padding:.7rem; border:1px solid #d6d3d1; border-radius:12px; font:inherit; }
+    .muted { color:var(--muted); }
+    .ok { background:#dcfce7; padding:.8rem; border-radius:12px; }
+    .err { background:#fee2e2; padding:.8rem; border-radius:12px; }
+    .hide { display:none; }
+    .pill { display:inline-block; background:#c2622e1a; color:var(--accent); border-radius:999px; padding:.2rem .6rem; font-size:.75rem; font-weight:700; }
+    ul { padding-left:1.1rem; }
+    .cas { border-bottom:1px solid #eee; padding:.7rem 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="brand">AgriSense<small>TOMATO · ATACORA</small></div>
+      <nav id="nav"></nav>
+    </div>
+  </header>
+  <main id="app"></main>
+  <script>
+    const API = "/api";
+    const pages = [
+      ["accueil","Accueil"],
+      ["diagnostic","Diagnostic"],
+      ["meteo","Météo"],
+      ["marches","Marchés"],
+      ["conseils","Conseils"],
+      ["agent","Agent"],
+      ["compte","Compte"],
+    ];
+    let user = JSON.parse(localStorage.getItem("agrisence_user") || "null");
+    let page = "accueil";
+
+    async function api(path, opts={}) {
+      const r = await fetch(API + path, {
+        headers: { "Content-Type": "application/json", ...(opts.headers||{}) },
+        ...opts,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw data;
+      return data;
+    }
+    function nav() {
+      document.getElementById("nav").innerHTML = pages.map(([id,label]) =>
+        `<button class="${page===id?"on":""}" onclick="go('${id}')">${label}</button>`
+      ).join("");
+    }
+    function go(id) { page = id; nav(); render(); }
+    function fmtErr(e) {
+      if (!e) return "Erreur";
+      if (typeof e === "string") return e;
+      if (e.detail) return e.detail;
+      if (e.non_field_errors) return e.non_field_errors.join(" ");
+      return Object.entries(e).map(([k,v]) => k + ": " + (Array.isArray(v)?v.join(" "):v)).join(" · ");
+    }
+
+    async function render() {
+      const el = document.getElementById("app");
+      if (page === "accueil") {
+        el.innerHTML = `
+          <section class="hero">
+            <div>
+              <span class="pill">Assistant agricole · Atacora, Bénin</span>
+              <h1>Doutez d'une feuille ?<br>Prenez la photo, ou décrivez.</h1>
+              <p class="muted">Cette page est branchée sur l'API locale : diagnostic, météo, prix et comptes sont réels.</p>
+              <p>
+                <button class="btn" onclick="go('diagnostic')">Diagnostiquer</button>
+                <button class="btn ghost" onclick="go('marches')">Voir les marchés</button>
+              </p>
+            </div>
+            <div class="card" id="homeStats">Chargement…</div>
+          </section>`;
+        try {
+          const s = await api("/sante/");
+          document.getElementById("homeStats").innerHTML =
+            `<h3>API en ligne</h3><p>${s.service}</p>
+             <p><strong>${s.utilisateurs}</strong> utilisateurs · <strong>${s.cultures}</strong> culture</p>
+             <p class="muted">${user ? "Connecté : "+user.prenom+" "+user.nom+" ("+user.role+")" : "Pas encore connecté."}</p>`;
+        } catch { document.getElementById("homeStats").innerHTML = "<p class='err'>API injoignable. Lancez Django.</p>"; }
+      }
+
+      if (page === "diagnostic") {
+        el.innerHTML = `
+          <h2>Diagnostic</h2>
+          <div class="grid3">
+            <form class="card" onsubmit="diagSymptomes(event)">
+              <h3>Par symptômes</h3>
+              <label>Décrivez (virgules)</label>
+              <textarea name="symptomes" rows="3" placeholder="taches brunes, feuilles jaunes"></textarea>
+              <button class="btn" type="submit">Analyser</button>
+            </form>
+            <form class="card" onsubmit="diagGalerie(event)">
+              <h3>Par galerie</h3>
+              <label>Numéro</label>
+              <select name="numero_galerie" id="galerieSelect"></select>
+              <button class="btn" type="submit">Confirmer</button>
+            </form>
+            <div class="card" id="galerie"></div>
+          </div>
+          <div id="diagOut" style="margin-top:1rem"></div>`;
+        try {
+          const g = await api("/maladies/galerie/");
+          document.getElementById("galerie").innerHTML =
+            "<h3>Galerie</h3>" + g.maladies.map(m => `<p><strong>${m.numero}. ${m.nom}</strong><br><span class="muted">${m.symptomes.join(", ")}</span></p>`).join("");
+          document.getElementById("galerieSelect").innerHTML =
+            g.maladies.map(m => `<option value="${m.numero}">${m.numero}. ${m.nom}</option>`).join("");
+        } catch(e) { document.getElementById("galerie").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+      }
+
+      if (page === "meteo") {
+        el.innerHTML = `<h2>Météo agricole</h2><div id="meteo">Chargement…</div>`;
+        try {
+          const rows = await api("/previsions-meteo/");
+          document.getElementById("meteo").innerHTML = `<div class="grid3">${rows.map(r =>
+            `<div class="card"><h3>${r.date_prevision}</h3>
+             <p>${r.temperature_min}° / ${r.temperature_max}°</p>
+             <p>Pluie ${r.probabilite_pluie}% · ${r.quantite_pluie} mm</p>
+             <p>Risque fongique : <strong>${r.risque_maladie_fongique}</strong></p></div>`
+          ).join("")}</div>`;
+        } catch(e) { document.getElementById("meteo").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+      }
+
+      if (page === "marches") {
+        el.innerHTML = `<h2>Prix des marchés</h2><div id="marches">Chargement…</div>`;
+        try {
+          const [marches, prix] = await Promise.all([api("/marches/"), api("/prix/")]);
+          const byId = Object.fromEntries(marches.map(m => [m.id_marche, m]));
+          document.getElementById("marches").innerHTML = `<div class="grid3">${prix.map(p => {
+            const m = byId[p.id_marche] || {};
+            return `<div class="card"><h3>${m.nom||""}</h3><p>${m.localisation||""}</p>
+              <p><strong>${p.prix} ${p.devise}</strong> / ${p.unite}</p>
+              <p class="muted">${p.date_releve} · ${p.source||""}</p></div>`;
+          }).join("")}</div>`;
+        } catch(e) { document.getElementById("marches").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+      }
+
+      if (page === "conseils") {
+        el.innerHTML = `<h2>Conseils validés</h2><div id="conseils">Chargement…</div>`;
+        try {
+          const rows = await api("/conseils/");
+          document.getElementById("conseils").innerHTML = rows.map(c =>
+            `<div class="card" style="margin-bottom:.8rem"><span class="pill">${c.maladie||""} · ${c.niveau_urgence||""}</span>
+             <h3>${c.titre}</h3><p>${c.contenu}</p></div>`
+          ).join("");
+        } catch(e) { document.getElementById("conseils").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+      }
+
+      if (page === "agent") {
+        el.innerHTML = `<h2>Espace agent</h2><p class="muted">Cas signalés par les producteurs.</p><div id="agent">Chargement…</div>`;
+        try {
+          const rows = await api("/agent/cas/");
+          document.getElementById("agent").innerHTML = rows.length ? rows.map(c =>
+            `<div class="cas"><strong>${c.maladie||"En attente"}</strong> · ${c.score_confiance||"—"}%
+             <div class="muted">${c.producteur} · ${c.telephone} · ${c.exploitation} (${c.localisation})</div>
+             <div>${c.description_symptomes||""}</div></div>`
+          ).join("") : "<p>Aucun cas pour l'instant.</p>";
+        } catch(e) { document.getElementById("agent").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+      }
+
+      if (page === "compte") {
+        el.innerHTML = `
+          <div class="grid3">
+            <form class="card" onsubmit="inscrire(event)">
+              <h3>Créer un compte</h3>
+              <label>Nom</label><input name="nom" required>
+              <label>Prénom</label><input name="prenom" required>
+              <label>Téléphone</label><input name="telephone" required>
+              <label>Email</label><input name="email" type="email">
+              <label>Rôle</label>
+              <select name="role">
+                <option value="agriculteur">Agriculteur</option>
+                <option value="agent agricole">Agent agricole</option>
+              </select>
+              <label>Mot de passe</label><input name="mot_de_passe" type="password" required minlength="6">
+              <button class="btn" type="submit">Enregistrer</button>
+            </form>
+            <form class="card" onsubmit="connecter(event)">
+              <h3>Connexion</h3>
+              <label>Téléphone</label><input name="telephone" required>
+              <label>Mot de passe</label><input name="mot_de_passe" type="password" required>
+              <button class="btn" type="submit">Se connecter</button>
+            </form>
+            <div class="card" id="session">${user ? "<p class='ok'>Connecté : "+user.prenom+" "+user.nom+" ("+user.role+")</p><button class='btn ghost' onclick='logout()'>Déconnexion</button>" : "<p class='muted'>Aucun compte actif sur cet appareil.</p>"}</div>
+          </div>
+          <p id="compteMsg"></p>`;
+      }
+    }
+
+    async function diagSymptomes(ev) {
+      ev.preventDefault();
+      const symptomes = ev.target.symptomes.value;
+      document.getElementById("diagOut").innerHTML = "Analyse…";
+      try {
+        const d = await api("/diagnostics/analyse/", { method:"POST", body: JSON.stringify({ symptomes }) });
+        showDiag(d);
+      } catch(e) { document.getElementById("diagOut").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+    }
+    async function diagGalerie(ev) {
+      ev.preventDefault();
+      const numero_galerie = Number(ev.target.numero_galerie.value);
+      try {
+        const d = await api("/diagnostics/analyse/", { method:"POST", body: JSON.stringify({ numero_galerie }) });
+        showDiag(d);
+      } catch(e) { document.getElementById("diagOut").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+    }
+    function showDiag(d) {
+      document.getElementById("diagOut").innerHTML =
+        `<div class="card">${(d.resultats||[]).map(r =>
+          `<h3>${r.maladie} · ${r.score_confiance}%</h3><p>${r.cause}</p><ul>${(r.conseils||[]).map(c=>"<li>"+c+"</li>").join("")}</ul>`
+        ).join("") || "<p>Pas de match. Essayez la galerie.</p>"}
+        <p class="muted">${d.avertissement||""}</p></div>`;
+    }
+    async function inscrire(ev) {
+      ev.preventDefault();
+      const f = ev.target;
+      const body = {
+        nom: f.nom.value, prenom: f.prenom.value, telephone: f.telephone.value,
+        email: f.email.value || null, role: f.role.value, mot_de_passe: f.mot_de_passe.value
+      };
+      try {
+        const u = await api("/utilisateurs/", { method:"POST", body: JSON.stringify(body) });
+        document.getElementById("compteMsg").innerHTML = "<p class='ok'>Compte créé pour "+u.prenom+" "+u.nom+". Vous pouvez vous connecter.</p>";
+      } catch(e) { document.getElementById("compteMsg").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+    }
+    async function connecter(ev) {
+      ev.preventDefault();
+      const f = ev.target;
+      try {
+        const u = await api("/auth/connexion/", { method:"POST", body: JSON.stringify({ telephone: f.telephone.value, mot_de_passe: f.mot_de_passe.value }) });
+        user = u; localStorage.setItem("agrisence_user", JSON.stringify(u));
+        render();
+      } catch(e) { document.getElementById("compteMsg").innerHTML = "<p class='err'>"+fmtErr(e)+"</p>"; }
+    }
+    function logout() { user=null; localStorage.removeItem("agrisence_user"); render(); }
+
+    nav(); render();
+  </script>
+</body>
+</html>
